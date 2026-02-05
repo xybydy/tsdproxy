@@ -127,5 +127,7 @@ func (app *WebApp) Stop() {
 	//
 	app.ProxyManager.StopAllProxies()
 
+	app.HTTP.Shutdown()
+
 	app.Log.Info().Msg("Server was shutdown successfully")
 }
