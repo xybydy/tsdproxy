@@ -157,6 +157,14 @@ func (c *Client) DeleteProxy(id string) error {
 	return nil
 }
 
+// RemoveTarget method implements TargetProvider RemoveTarget method
+func (c *Client) RemoveTarget(id string) {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+
+	delete(c.proxies, id)
+}
+
 // newProxyConfig method returns a new proxyconfig.Config
 func (c *Client) newProxyConfig(name string, p proxyConfig) (*model.Config, error) {
 	proxyProvider := c.config.DefaultProxyProvider

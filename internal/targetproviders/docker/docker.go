@@ -123,6 +123,14 @@ func (c *Client) GetDefaultProxyProviderName() string {
 	return c.defaultProxyProvider
 }
 
+// RemoveTarget method implements TargetProvider RemoveTarget method
+func (c *Client) RemoveTarget(id string) {
+	c.log.Trace().Msgf("RemoveTarget %s", id)
+	defer c.log.Trace().Msgf("End RemoveTarget %s", id)
+
+	c.deleteContainer(id)
+}
+
 // WatchEvents method implements TargetProvider WatchEvents method
 func (c *Client) WatchEvents(ctx context.Context, eventsChan chan targetproviders.TargetEvent, errChan chan error) {
 	c.log.Trace().Msg("WatchEvents")
@@ -140,9 +148,23 @@ func (c *Client) WatchEvents(ctx context.Context, eventsChan chan targetprovider
 	})
 
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				c.log.Error().Interface("panic", r).Msg("docker event watcher panicked")
+			}
+			close(eventsChan)
+			close(errChan)
+		}()
+
 		for {
 			select {
-			case devent := <-dockereventsChan:
+			case <-ctx.Done():
+				return
+
+			case devent, ok := <-dockereventsChan:
+				if !ok {
+					return
+				}
 
 				switch devent.Action {
 				case devents.ActionStart:
@@ -151,7 +173,10 @@ func (c *Client) WatchEvents(ctx context.Context, eventsChan chan targetprovider
 					eventsChan <- c.getStopEvent(devent.Actor.ID)
 				}
 
-			case err := <-dockererrChan:
+			case err, ok := <-dockererrChan:
+				if !ok {
+					return
+				}
 				errChan <- err
 			}
 		}

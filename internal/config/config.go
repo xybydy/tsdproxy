@@ -6,7 +6,6 @@ package config
 import (
 	"errors"
 	"flag"
-	"fmt"
 	"io/fs"
 	"os"
 
@@ -98,7 +97,7 @@ func InitializeConfig() error {
 		println("Generating default configuration to:", *file)
 
 		if err := defaults.Set(Config); err != nil {
-			fmt.Printf("Error loading defaults: %v", err)
+			log.Error().Err(err).Msg("failed to load defaults")
 		}
 
 		Config.generateDefaultProviders()
@@ -111,7 +110,7 @@ func InitializeConfig() error {
 	// Make sure to set default values after loading from file
 	// unless defaults of map type are not loaded.
 	if err := defaults.Set(Config); err != nil {
-		fmt.Printf("Error loading defaults: %v", err)
+		log.Error().Err(err).Msg("failed to load defaults")
 	}
 
 	// load auth keys from files

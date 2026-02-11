@@ -25,11 +25,11 @@ type Dashboard struct {
 
 func NewDashboard(http *core.HTTPServer, log zerolog.Logger, pm *proxymanager.ProxyManager) *Dashboard {
 	dash := &Dashboard{
-		Log:        log.With().Str("module", "dashboard").Logger(),
-		HTTP:       http,
-		pm:         pm,
-		sseClients: make(map[string]*sseClient),
+		Log:  log.With().Str("module", "dashboard").Logger(),
+		HTTP: http,
+		pm:   pm,
 	}
+	dash.sseClients = make(map[string]*sseClient)
 
 	go dash.streamProxyUpdates()
 
@@ -53,8 +53,6 @@ func (dash *Dashboard) renderList(ch chan SSEMessage) {
 		Message: "#proxy-list>*",
 	}
 
-	proxies := dash.pm.GetProxies()
-	_ = proxies
 	for name, p := range dash.pm.Proxies {
 		if p.Config.Dashboard.Visible {
 			dash.renderProxy(ch, name, EventAppend)

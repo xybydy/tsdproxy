@@ -119,7 +119,12 @@ func (f *ConfigFile) Watch() {
 }
 
 func (f *ConfigFile) watchEvents(watcher *fsnotify.Watcher, file string, eventsWG *sync.WaitGroup) {
-	realFile, _ := filepath.EvalSymlinks(f.filename)
+	realFile, err := filepath.EvalSymlinks(f.filename)
+	if err != nil {
+		f.log.Warn().Err(err).Msg("failed to evaluate symlinks, using raw filename")
+		realFile = f.filename
+	}
+
 	for {
 		select {
 		case event, ok := <-watcher.Events:

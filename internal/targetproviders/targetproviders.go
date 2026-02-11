@@ -16,6 +16,7 @@ type (
 		GetDefaultProxyProviderName() string
 		Close()
 		AddTarget(id string) (*model.Config, error)
+		RemoveTarget(id string)
 		DeleteProxy(id string) error
 	}
 )

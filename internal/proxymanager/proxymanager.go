@@ -78,44 +78,68 @@ func (pm *ProxyManager) Start() {
 // StopAllProxies method shuts down all proxies.
 func (pm *ProxyManager) StopAllProxies() {
 	pm.log.Info().Msg("Shutdown all proxies")
-	wg := sync.WaitGroup{}
 
 	pm.mtx.RLock()
+	proxyIDs := make([]string, 0, len(pm.Proxies))
 	for id := range pm.Proxies {
-		wg.Add(1)
+		proxyIDs = append(proxyIDs, id)
+	}
+	pm.mtx.Unlock()
+
+	wg := sync.WaitGroup{}
+	wg.Add(len(proxyIDs))
+
+	for _, id := range proxyIDs {
 		go func() {
+			defer wg.Done()
 			pm.removeProxy(id)
-			wg.Done()
 		}()
 	}
-	pm.mtx.RUnlock()
 
 	wg.Wait()
 }
 
 // WatchEvents method watches for events from all target providers.
-func (pm *ProxyManager) WatchEvents() {
+func (pm *ProxyManager) WatchEvents(ctx context.Context) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	for _, provider := range pm.TargetProviders {
 		go func(provider targetproviders.TargetProvider) {
-			ctx := context.Background()
+			defer func() {
+				if r := recover(); r != nil {
+					pm.log.Error().Interface("panic", r).Msg("event watcher panicked")
+				}
+			}()
 
-			eventsChan := make(chan targetproviders.TargetEvent)
-			errChan := make(chan error)
-			defer close(errChan)
-			defer close(eventsChan)
+			eventsChan := make(chan targetproviders.TargetEvent, 100)
+			errChan := make(chan error, 1)
 
-			provider.WatchEvents(ctx, eventsChan, errChan)
+			go provider.WatchEvents(ctx, eventsChan, errChan)
+
 			for {
 				select {
+				case <-ctx.Done():
+					close(eventsChan)
+					close(errChan)
+					return
 				case event := <-eventsChan:
 					go pm.HandleProxyEvent(event)
-				case err := <-errChan:
+				case err, ok := <-errChan:
+					if !ok {
+						return
+					}
 					pm.log.Err(err).Msg("Error watching events")
-					return
 				}
 			}
 		}(provider)
 	}
+
+	// Cleanup when context is cancelled
+	go func() {
+		<-ctx.Done()
+		pm.log.Debug().Msg("Context cancelled, cleaning up providers")
+	}()
 }
 
 // HandleProxyEvent method handles events from a targetprovider

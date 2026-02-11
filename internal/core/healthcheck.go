@@ -35,7 +35,7 @@ func NewHealthHandler(http *HTTPServer, log zerolog.Logger) *Health {
 }
 
 func (h *Health) AddRoutes() {
-	h.HTTP.Handle("GET /health/ready/", h.Ready())
+	h.HTTP.Get("/health/ready/", h.Ready())
 }
 
 func (h *Health) Ready() http.HandlerFunc {
