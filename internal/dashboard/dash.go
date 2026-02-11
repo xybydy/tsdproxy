@@ -5,6 +5,7 @@ package dashboard
 
 import (
 	"sync"
+	"time"
 
 	"github.com/almeidapaulopt/tsdproxy/internal/core"
 	"github.com/almeidapaulopt/tsdproxy/internal/model"
@@ -32,6 +33,7 @@ func NewDashboard(http *core.HTTPServer, log zerolog.Logger, pm *proxymanager.Pr
 	dash.sseClients = make(map[string]*sseClient)
 
 	go dash.streamProxyUpdates()
+	go dash.startClientCleanup()
 
 	return dash
 }
@@ -107,5 +109,32 @@ func (dash *Dashboard) renderProxy(ch chan SSEMessage, name string, ev EventType
 	ch <- SSEMessage{
 		Type: ev,
 		Comp: pages.Proxy(a),
+	}
+}
+
+// startClientCleanup periodically removes stale SSE clients
+func (dash *Dashboard) startClientCleanup() {
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		dash.cleanupStaleClients()
+	}
+}
+
+// cleanupStaleClients removes clients that haven't been active recently
+func (dash *Dashboard) cleanupStaleClients() {
+	dash.mtx.Lock()
+	defer dash.mtx.Unlock()
+
+	now := time.Now()
+	staleThreshold := 15 * time.Minute
+
+	for sessionID, client := range dash.sseClients {
+		if now.Sub(client.lastActive) > staleThreshold {
+			dash.Log.Warn().Str("sessionID", sessionID).Msg("Removing stale SSE client")
+			delete(dash.sseClients, sessionID)
+			close(client.channel)
+		}
 	}
 }

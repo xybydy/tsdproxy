@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	ctypes "github.com/docker/docker/api/types/container"
@@ -183,6 +184,7 @@ func (c *Client) WatchEvents(ctx context.Context, eventsChan chan targetprovider
 	}()
 
 	go c.startAllProxies(ctx, eventsChan, errChan)
+	go c.startReconciliation(ctx)
 }
 
 func (c *Client) startAllProxies(ctx context.Context, eventsChan chan targetproviders.TargetEvent, errChan chan error) {
@@ -297,5 +299,61 @@ func (c *Client) setDefaultBridgeAddress() {
 			c.defaultBridgeAdress = strings.TrimSpace(network.IPAM.Config[0].Gateway)
 			return
 		}
+	}
+}
+
+// startReconciliation periodically reconciles the containers map with actual Docker state
+func (c *Client) startReconciliation(ctx context.Context) {
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			c.reconcileContainers(ctx)
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+// reconcileContainers removes stale containers from the cache
+func (c *Client) reconcileContainers(ctx context.Context) {
+	c.log.Trace().Msg("reconcileContainers")
+	defer c.log.Trace().Msg("End reconcileContainers")
+
+	// Get actual running containers with tsdproxy label
+	containerFilter := filters.NewArgs()
+	containerFilter.Add("label", LabelIsEnabled)
+
+	actualContainers, err := c.docker.ContainerList(ctx, ctypes.ListOptions{
+		Filters: containerFilter,
+		All:     false,
+	})
+	if err != nil {
+		c.log.Error().Err(err).Msg("Error listing containers for reconciliation")
+		return
+	}
+
+	// Build a map of actual container IDs
+	actualMap := make(map[string]bool)
+	for _, container := range actualContainers {
+		actualMap[container.ID] = true
+	}
+
+	// Remove containers that no longer exist
+	c.mutex.Lock()
+	removedCount := 0
+	for id := range c.containers {
+		if !actualMap[id] {
+			delete(c.containers, id)
+			c.log.Debug().Str("container", id).Msg("Removed stale container from cache")
+			removedCount++
+		}
+	}
+	c.mutex.Unlock()
+
+	if removedCount > 0 {
+		c.log.Info().Int("count", removedCount).Msg("Reconciled stale containers from cache")
 	}
 }

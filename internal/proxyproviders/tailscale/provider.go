@@ -144,6 +144,12 @@ func (c *Client) getOAuth(cfg *model.Config, dir string) string {
 		temptags = strings.Trim(strings.TrimSpace(c.tags), "\"")
 	}
 
+	// If using OAuth, we must use only the per-proxy tags, not the provider-level tags
+	// This ensures each proxy gets only its configured tags, not all tags from the OAuth client
+	if cfg.Tailscale.Tags != "" {
+		temptags = strings.Trim(strings.TrimSpace(cfg.Tailscale.Tags), "\"")
+	}
+
 	if temptags == "" {
 		c.log.Error().Msg("must define tags to use OAuth")
 		return ""

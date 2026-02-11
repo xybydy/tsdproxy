@@ -3,7 +3,7 @@
 > **Project:** TsDProxy - Tailscale Docker Proxy  
 > **Language:** Go 1.25.5  
 > **License:** MIT  
-> **Repository:** https://github.com/almeidapaulopt/tsdproxy
+> **Repository:** https://github.com/xybydy/tsdproxy
 
 ---
 

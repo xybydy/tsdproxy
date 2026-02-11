@@ -79,8 +79,18 @@ func NewProxy(log zerolog.Logger,
 func (proxy *Proxy) Start() {
 	go func() {
 		go proxy.start()
-		for event := range proxy.providerProxy.WatchEvents() {
-			proxy.setStatus(event.Status)
+		for {
+			select {
+			case event, ok := <-proxy.providerProxy.WatchEvents():
+				if !ok {
+					// Channel closed, exit goroutine
+					return
+				}
+				proxy.setStatus(event.Status)
+			case <-proxy.ctx.Done():
+				// Context cancelled, exit goroutine
+				return
+			}
 		}
 	}()
 }

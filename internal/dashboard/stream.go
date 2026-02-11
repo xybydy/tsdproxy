@@ -5,6 +5,7 @@ package dashboard
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/almeidapaulopt/tsdproxy/internal/consts"
 	"github.com/almeidapaulopt/tsdproxy/internal/model"
@@ -14,7 +15,7 @@ import (
 )
 
 const (
-	chanSizeSSEQueue = 0
+	chanSizeSSEQueue = 100 // Buffered channel to prevent blocking
 
 	EventAppend EventType = iota
 	EventMerge
@@ -28,7 +29,9 @@ const (
 type (
 	EventType int
 	sseClient struct {
-		channel chan SSEMessage
+		channel     chan SSEMessage
+		connectedAt time.Time
+		lastActive  time.Time
 	}
 
 	SSEMessage struct {
@@ -46,8 +49,11 @@ func (dash *Dashboard) streamHandler() http.HandlerFunc {
 		sse := datastar.NewSSE(w, r)
 
 		// Create a new client
+		now := time.Now()
 		client := &sseClient{
-			channel: make(chan SSEMessage, chanSizeSSEQueue),
+			channel:     make(chan SSEMessage, chanSizeSSEQueue),
+			connectedAt: now,
+			lastActive:  now,
 		}
 
 		// Register client
@@ -136,25 +142,44 @@ func (dash *Dashboard) removeSSEClient(name string) {
 }
 
 func (dash *Dashboard) streamProxyUpdates() {
+	// Collect clients and sessionIDs
+	type clientInfo struct {
+		client     *sseClient
+		sessionID  string
+	}
+	
 	for event := range dash.pm.SubscribeStatusEvents() {
 		dash.mtx.RLock()
-		for _, sseClient := range dash.sseClients {
+
+		clients := make([]clientInfo, 0, len(dash.sseClients))
+		for sessionID, client := range dash.sseClients {
+			clients = append(clients, clientInfo{client: client, sessionID: sessionID})
+		}
+		dash.mtx.RUnlock()
+
+		for _, info := range clients {
 			switch event.Status {
 			case model.ProxyStatusInitializing:
-				dash.renderProxy(sseClient.channel, event.ID, EventAppend)
-				dash.streamSortList(sseClient.channel)
+				dash.renderProxy(info.client.channel, event.ID, EventAppend)
+				dash.streamSortList(info.client.channel)
 
 			case model.ProxyStatusStopped:
-				sseClient.channel <- SSEMessage{
+				info.client.channel <- SSEMessage{
 					Type:    EventRemoveMessage,
 					Message: "#" + event.ID,
 				}
 
 			default:
-				dash.renderProxy(sseClient.channel, event.ID, EventMerge)
+				dash.renderProxy(info.client.channel, event.ID, EventMerge)
 			}
+
+			// Update lastActive timestamp
+			dash.mtx.Lock()
+			if client, ok := dash.sseClients[info.sessionID]; ok {
+				client.lastActive = time.Now()
+			}
+			dash.mtx.Unlock()
 		}
-		dash.mtx.RUnlock()
 	}
 }
 

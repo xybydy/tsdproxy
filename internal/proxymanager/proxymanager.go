@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"time"
 
 	"github.com/rs/zerolog"
 
@@ -33,9 +34,17 @@ type (
 		TargetProviders TargetProviderList
 		ProxyProviders  ProxyProviderList
 
-		statusSubscribers map[chan model.ProxyEvent]struct{}
+		statusSubscribers map[chan model.ProxyEvent]*subscriber
+
+		// eventWorkerPool limits concurrent event handler goroutines
+		eventWorkerPool chan struct{}
 
 		mtx sync.RWMutex
+	}
+
+	subscriber struct {
+		ch       chan model.ProxyEvent
+		lastSeen time.Time
 	}
 )
 
@@ -50,9 +59,13 @@ func NewProxyManager(logger zerolog.Logger) *ProxyManager {
 		Proxies:           make(ProxyList),
 		TargetProviders:   make(TargetProviderList),
 		ProxyProviders:    make(ProxyProviderList),
-		statusSubscribers: make(map[chan model.ProxyEvent]struct{}),
+		statusSubscribers: make(map[chan model.ProxyEvent]*subscriber),
+		eventWorkerPool:   make(chan struct{}, 50), // Max 50 concurrent event handlers
 		log:               logger.With().Str("module", "proxymanager").Logger(),
 	}
+
+	// Start cleanup routine for stale subscribers
+	go pm.startSubscriberCleanup()
 
 	return pm
 }
@@ -120,11 +133,16 @@ func (pm *ProxyManager) WatchEvents(ctx context.Context) {
 			for {
 				select {
 				case <-ctx.Done():
-					close(eventsChan)
-					close(errChan)
+					// Don't close channels here - let the provider's defer handle it
+					// Closing channels while provider may still be writing causes panic
 					return
 				case event := <-eventsChan:
-					go pm.HandleProxyEvent(event)
+					// Use worker pool to limit concurrent event handlers
+					pm.eventWorkerPool <- struct{}{} // Acquire semaphore
+					go func(e targetproviders.TargetEvent) {
+						defer func() { <-pm.eventWorkerPool }() // Release semaphore
+						pm.HandleProxyEvent(e)
+					}(event)
 				case err, ok := <-errChan:
 					if !ok {
 						return
@@ -158,10 +176,13 @@ func (pm *ProxyManager) HandleProxyEvent(event targetproviders.TargetEvent) {
 // SubscribeStatusEvents return a channel of proxy events.
 // This events are sent by Proxies and Ports.
 func (pm *ProxyManager) SubscribeStatusEvents() <-chan model.ProxyEvent {
-	ch := make(chan model.ProxyEvent)
+	ch := make(chan model.ProxyEvent, 100) // Buffered channel to prevent blocking
 
 	pm.mtx.Lock()
-	pm.statusSubscribers[ch] = struct{}{}
+	pm.statusSubscribers[ch] = &subscriber{
+		ch:       ch,
+		lastSeen: time.Now(),
+	}
 	pm.mtx.Unlock()
 
 	return ch
@@ -173,6 +194,33 @@ func (pm *ProxyManager) UnsubscribeStatusEvents(ch chan model.ProxyEvent) {
 	delete(pm.statusSubscribers, ch)
 	pm.mtx.Unlock()
 	close(ch)
+}
+
+// startSubscriberCleanup periodically removes stale subscribers
+func (pm *ProxyManager) startSubscriberCleanup() {
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		pm.cleanupStaleSubscribers()
+	}
+}
+
+// cleanupStaleSubscribers removes subscribers that haven't been active recently
+func (pm *ProxyManager) cleanupStaleSubscribers() {
+	pm.mtx.Lock()
+	defer pm.mtx.Unlock()
+
+	now := time.Now()
+	staleThreshold := 10 * time.Minute
+
+	for ch, sub := range pm.statusSubscribers {
+		if now.Sub(sub.lastSeen) > staleThreshold {
+			pm.log.Warn().Msg("Removing stale subscriber")
+			delete(pm.statusSubscribers, ch)
+			close(ch)
+		}
+	}
 }
 
 func (pm *ProxyManager) GetProxies() ProxyList {
@@ -194,13 +242,27 @@ func (pm *ProxyManager) GetProxy(name string) (*Proxy, bool) {
 // broadcastStatusEvents broadcasts proxy status event to all SubscribeStatusEvents
 func (pm *ProxyManager) broadcastStatusEvents(event model.ProxyEvent) {
 	pm.mtx.RLock()
+	subscribers := make([]chan model.ProxyEvent, 0, len(pm.statusSubscribers))
 	for ch := range pm.statusSubscribers {
-		select {
-		case ch <- event:
-		default:
-		}
+		subscribers = append(subscribers, ch)
 	}
 	pm.mtx.RUnlock()
+
+	// Send without holding lock to prevent deadlock
+	for _, ch := range subscribers {
+		select {
+		case ch <- event:
+			// Update lastSeen timestamp for active subscriber
+			pm.mtx.Lock()
+			if sub, ok := pm.statusSubscribers[ch]; ok {
+				sub.lastSeen = time.Now()
+			}
+			pm.mtx.Unlock()
+		default:
+			// Channel full, skip this subscriber to prevent blocking
+			pm.log.Warn().Msg("Subscriber channel full, skipping event broadcast")
+		}
+	}
 }
 
 // addTargetProviders method adds TargetProviders from configuration file.

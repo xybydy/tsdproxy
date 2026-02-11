@@ -76,6 +76,13 @@ func (p *Proxy) GetURL() string {
 
 // Close method implements proxyconfig.Proxy Close method.
 func (p *Proxy) Close() error {
+	p.mtx.Lock()
+	if p.events != nil {
+		close(p.events)
+		p.events = nil
+	}
+	p.mtx.Unlock()
+
 	if p.tsServer != nil {
 		return p.tsServer.Close()
 	}
