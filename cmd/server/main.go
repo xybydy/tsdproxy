@@ -4,6 +4,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -110,7 +111,7 @@ func (app *WebApp) Start() {
 
 	// Start watching docker events
 	//
-	app.ProxyManager.WatchEvents()
+	app.ProxyManager.WatchEvents(context.Background())
 
 	// Add Routes
 	//
