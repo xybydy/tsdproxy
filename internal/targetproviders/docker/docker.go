@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker/docker/api/types"
 	ctypes "github.com/docker/docker/api/types/container"
 	devents "github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/filters"
@@ -99,7 +98,7 @@ func (c *Client) AddTarget(id string) (*model.Config, error) {
 	var dservice swarm.Service
 
 	if serviceID, ok := dcontainer.Config.Labels["com.docker.swarm.service.id"]; ok {
-		dservice, _, _ = c.docker.ServiceInspectWithRaw(ctx, serviceID, types.ServiceInspectOptions{})
+		dservice, _, _ = c.docker.ServiceInspectWithRaw(ctx, serviceID, swarm.ServiceInspectOptions{})
 	}
 
 	return c.newProxyConfig(dcontainer, dservice)
@@ -200,12 +199,19 @@ func (c *Client) startAllProxies(ctx context.Context, eventsChan chan targetprov
 		All:     false,
 	})
 	if err != nil {
-		errChan <- fmt.Errorf("error listing containers: %w", err)
+		select {
+		case errChan <- fmt.Errorf("error listing containers: %w", err):
+		case <-ctx.Done():
+		}
 		return
 	}
 
 	for _, container := range containers {
-		eventsChan <- c.getStartEvent(container.ID)
+		select {
+		case eventsChan <- c.getStartEvent(container.ID):
+		case <-ctx.Done():
+			return
+		}
 	}
 }
 

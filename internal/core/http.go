@@ -62,7 +62,7 @@ func (a *HTTPServer) Post(pattern string, handler http.Handler) {
 // StartServer starts a custom http server.
 func (a *HTTPServer) StartServer(s *http.Server) error {
 	a.Server = s
-	
+
 	// set Logger the first middlewares
 	a.Server.Handler = LoggerMiddleware(a.Log, a.Mux)
 
@@ -144,5 +144,7 @@ func (a *HTTPServer) prettyJSON(b []byte) []byte {
 }
 
 func (a *HTTPServer) Shutdown() {
-	a.Server.Shutdown(context.Background())
+	if err := a.Server.Shutdown(context.Background()); err != nil {
+		a.Log.Error().Err(err).Msg("Server shutdown failed")
+	}
 }

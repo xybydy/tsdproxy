@@ -88,7 +88,7 @@ func (proxy *Proxy) Start() {
 				}
 				proxy.setStatus(event.Status)
 			case <-proxy.ctx.Done():
-				// Context cancelled, exit goroutine
+				// Context canceled, exit goroutine
 				return
 			}
 		}

@@ -15,7 +15,7 @@ tailscale:
   providers:
     default:
       controlUrl: https://controlplane.tailscale.com
-      # authKeyFile: dev/KEY_FILE
+      authKeyFile: dev/KEY_FILE
   dataDir: dev/data/
 http:
   hostname: 0.0.0.0

@@ -65,7 +65,7 @@ func NewProxyManager(logger zerolog.Logger) *ProxyManager {
 	}
 
 	// Start cleanup routine for stale subscribers
-	go pm.startSubscriberCleanup()
+	//go pm.startSubscriberCleanup()
 
 	return pm
 }
@@ -97,16 +97,16 @@ func (pm *ProxyManager) StopAllProxies() {
 	for id := range pm.Proxies {
 		proxyIDs = append(proxyIDs, id)
 	}
-	pm.mtx.Unlock()
+	pm.mtx.RUnlock()
 
 	wg := sync.WaitGroup{}
 	wg.Add(len(proxyIDs))
 
 	for _, id := range proxyIDs {
-		go func() {
+		go func(proxyID string) {
 			defer wg.Done()
-			pm.removeProxy(id)
-		}()
+			pm.removeProxy(proxyID)
+		}(id)
 	}
 
 	wg.Wait()
@@ -114,11 +114,12 @@ func (pm *ProxyManager) StopAllProxies() {
 
 // WatchEvents method watches for events from all target providers.
 func (pm *ProxyManager) WatchEvents(ctx context.Context) {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	var wg sync.WaitGroup
 
 	for _, provider := range pm.TargetProviders {
+		wg.Add(1)
 		go func(provider targetproviders.TargetProvider) {
+			defer wg.Done()
 			defer func() {
 				if r := recover(); r != nil {
 					pm.log.Error().Interface("panic", r).Msg("event watcher panicked")
@@ -128,23 +129,31 @@ func (pm *ProxyManager) WatchEvents(ctx context.Context) {
 			eventsChan := make(chan targetproviders.TargetEvent, 100)
 			errChan := make(chan error, 1)
 
+			// Start provider's event watcher
 			go provider.WatchEvents(ctx, eventsChan, errChan)
 
 			for {
 				select {
 				case <-ctx.Done():
-					// Don't close channels here - let the provider's defer handle it
-					// Closing channels while provider may still be writing causes panic
 					return
-				case event := <-eventsChan:
+				case event, ok := <-eventsChan:
+					if !ok {
+						pm.log.Debug().Msg("events channel closed, stopping watcher")
+						return
+					}
 					// Use worker pool to limit concurrent event handlers
-					pm.eventWorkerPool <- struct{}{} // Acquire semaphore
-					go func(e targetproviders.TargetEvent) {
-						defer func() { <-pm.eventWorkerPool }() // Release semaphore
-						pm.HandleProxyEvent(e)
-					}(event)
+					select {
+					case pm.eventWorkerPool <- struct{}{}: // Acquire semaphore
+						go func(e targetproviders.TargetEvent) {
+							defer func() { <-pm.eventWorkerPool }() // Release semaphore
+							pm.HandleProxyEvent(e)
+						}(event)
+					case <-ctx.Done():
+						return
+					}
 				case err, ok := <-errChan:
 					if !ok {
+						pm.log.Debug().Msg("error channel closed, stopping watcher")
 						return
 					}
 					pm.log.Err(err).Msg("Error watching events")
@@ -153,10 +162,12 @@ func (pm *ProxyManager) WatchEvents(ctx context.Context) {
 		}(provider)
 	}
 
-	// Cleanup when context is cancelled
+	// Wait for all watchers to finish when context is canceled
 	go func() {
 		<-ctx.Done()
-		pm.log.Debug().Msg("Context cancelled, cleaning up providers")
+		pm.log.Debug().Msg("Context canceled, waiting for watchers to finish")
+		wg.Wait()
+		pm.log.Debug().Msg("All watchers finished")
 	}()
 }
 
@@ -194,33 +205,6 @@ func (pm *ProxyManager) UnsubscribeStatusEvents(ch chan model.ProxyEvent) {
 	delete(pm.statusSubscribers, ch)
 	pm.mtx.Unlock()
 	close(ch)
-}
-
-// startSubscriberCleanup periodically removes stale subscribers
-func (pm *ProxyManager) startSubscriberCleanup() {
-	ticker := time.NewTicker(5 * time.Minute)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		pm.cleanupStaleSubscribers()
-	}
-}
-
-// cleanupStaleSubscribers removes subscribers that haven't been active recently
-func (pm *ProxyManager) cleanupStaleSubscribers() {
-	pm.mtx.Lock()
-	defer pm.mtx.Unlock()
-
-	now := time.Now()
-	staleThreshold := 10 * time.Minute
-
-	for ch, sub := range pm.statusSubscribers {
-		if now.Sub(sub.lastSeen) > staleThreshold {
-			pm.log.Warn().Msg("Removing stale subscriber")
-			delete(pm.statusSubscribers, ch)
-			close(ch)
-		}
-	}
 }
 
 func (pm *ProxyManager) GetProxies() ProxyList {
@@ -327,7 +311,10 @@ func (pm *ProxyManager) addProxy(proxy *Proxy) {
 
 // removeProxy method removes a Proxy from the ProxyManager.
 func (pm *ProxyManager) removeProxy(hostname string) {
+	pm.mtx.RLock()
 	proxy, exists := pm.Proxies[hostname]
+	pm.mtx.RUnlock()
+
 	if !exists {
 		return
 	}

@@ -144,10 +144,10 @@ func (dash *Dashboard) removeSSEClient(name string) {
 func (dash *Dashboard) streamProxyUpdates() {
 	// Collect clients and sessionIDs
 	type clientInfo struct {
-		client     *sseClient
-		sessionID  string
+		client    *sseClient
+		sessionID string
 	}
-	
+
 	for event := range dash.pm.SubscribeStatusEvents() {
 		dash.mtx.RLock()
 
