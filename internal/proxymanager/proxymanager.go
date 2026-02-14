@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/almeidapaulopt/tsdproxy/internal/consts"
 	"github.com/rs/zerolog"
 
 	"github.com/almeidapaulopt/tsdproxy/internal/config"
@@ -60,7 +61,7 @@ func NewProxyManager(logger zerolog.Logger) *ProxyManager {
 		TargetProviders:   make(TargetProviderList),
 		ProxyProviders:    make(ProxyProviderList),
 		statusSubscribers: make(map[chan model.ProxyEvent]*subscriber),
-		eventWorkerPool:   make(chan struct{}, 50), // Max 50 concurrent event handlers
+		eventWorkerPool:   make(chan struct{}, consts.MaxConcurrentEventHandlers),
 		log:               logger.With().Str("module", "proxymanager").Logger(),
 	}
 
@@ -126,8 +127,8 @@ func (pm *ProxyManager) WatchEvents(ctx context.Context) {
 				}
 			}()
 
-			eventsChan := make(chan targetproviders.TargetEvent, 100)
-			errChan := make(chan error, 1)
+			eventsChan := make(chan targetproviders.TargetEvent, consts.EventChannelBufferSize)
+			errChan := make(chan error, consts.ErrorChannelBufferSize)
 
 			// Start provider's event watcher
 			go provider.WatchEvents(ctx, eventsChan, errChan)
@@ -187,7 +188,7 @@ func (pm *ProxyManager) HandleProxyEvent(event targetproviders.TargetEvent) {
 // SubscribeStatusEvents return a channel of proxy events.
 // This events are sent by Proxies and Ports.
 func (pm *ProxyManager) SubscribeStatusEvents() <-chan model.ProxyEvent {
-	ch := make(chan model.ProxyEvent, 100) // Buffered channel to prevent blocking
+	ch := make(chan model.ProxyEvent, consts.StatusEventChannelBufferSize) // Buffered channel to prevent blocking
 
 	pm.mtx.Lock()
 	pm.statusSubscribers[ch] = &subscriber{

@@ -12,8 +12,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/docker/docker/client"
 	"github.com/rs/zerolog"
+
+	"github.com/almeidapaulopt/tsdproxy/internal/consts"
 
 	"github.com/almeidapaulopt/tsdproxy/internal/config"
 	"github.com/almeidapaulopt/tsdproxy/internal/core"
@@ -25,9 +26,9 @@ type WebApp struct {
 	Log          zerolog.Logger
 	HTTP         *core.HTTPServer
 	Health       *core.Health
-	Docker       *client.Client
 	ProxyManager *pm.ProxyManager
 	Dashboard    *dashboard.Dashboard
+	cancel       context.CancelFunc
 }
 
 func InitializeApp() (*WebApp, error) {
@@ -61,8 +62,8 @@ func InitializeApp() (*WebApp, error) {
 }
 
 func main() {
-	println("Initializing server")
-	println("Version", core.GetVersion())
+	fmt.Println("Initializing server")
+	fmt.Println("Version", core.GetVersion())
 
 	app, err := InitializeApp()
 	if err != nil {
@@ -70,27 +71,39 @@ func main() {
 		os.Exit(1)
 	}
 
-	app.Start()
+	// Create a context that can be canceled
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Start the application with the context
+	app.Start(ctx)
 	defer app.Stop()
 
-	// Wait for interrupt signal to gracefully shutdown the server with a timeout of 10 seconds.
-	//
-	quit := make(chan os.Signal, 1)
+	// Wait for interrupt signal to gracefully shutdown the server
+	quit := make(chan os.Signal, consts.SignalChannelBufferSize)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
-	<-quit
+
+	select {
+	case sig := <-quit:
+		app.Log.Info().Str("signal", sig.String()).Msg("Received shutdown signal")
+		cancel() // Cancel context to stop all goroutines
+	case <-ctx.Done():
+		app.Log.Info().Msg("Context canceled")
+	}
 }
 
-func (app *WebApp) Start() {
+func (app *WebApp) Start(ctx context.Context) {
 	app.Log.Info().
 		Str("Version", core.GetVersion()).Msg("Starting server")
 
+	// Store cancel function for later use
+	ctx, cancel := context.WithCancel(ctx)
+	app.cancel = cancel
+
 	// Start the webserver
-	//
 	go func() {
 		app.Log.Info().Msg("Initializing WebServer")
 
-		// Start the webserver
-		//
 		srv := http.Server{
 			Addr:              fmt.Sprintf("%s:%d", config.Config.HTTP.Hostname, config.Config.HTTP.Port),
 			ReadHeaderTimeout: core.ReadHeaderTimeout,
@@ -98,23 +111,20 @@ func (app *WebApp) Start() {
 
 		app.Health.SetReady()
 
-		if err := app.HTTP.StartServer(&srv); errors.Is(err, http.ErrServerClosed) {
+		if err := app.HTTP.StartServer(&srv); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			app.Log.Fatal().Err(err).Msg("shutting down the server")
 		}
 	}()
 
 	// Setup proxy for existing containers
-	//
 	app.Log.Info().Msg("Setting up proxy proxies")
 
 	app.ProxyManager.Start()
 
-	// Start watching docker events
-	//
-	app.ProxyManager.WatchEvents(context.Background())
+	// Start watching docker events with cancelable context
+	app.ProxyManager.WatchEvents(ctx)
 
 	// Add Routes
-	//
 	app.Dashboard.AddRoutes()
 	core.PprofAddRoutes(app.HTTP)
 }

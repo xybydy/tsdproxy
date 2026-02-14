@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/almeidapaulopt/tsdproxy/internal/consts"
 	"github.com/almeidapaulopt/tsdproxy/internal/core"
 	"github.com/almeidapaulopt/tsdproxy/internal/model"
 	"github.com/almeidapaulopt/tsdproxy/internal/proxymanager"
@@ -114,7 +115,7 @@ func (dash *Dashboard) renderProxy(ch chan SSEMessage, name string, ev EventType
 
 // startClientCleanup periodically removes stale SSE clients
 func (dash *Dashboard) startClientCleanup() {
-	ticker := time.NewTicker(5 * time.Minute)
+	ticker := time.NewTicker(consts.ClientCleanupInterval)
 	defer ticker.Stop()
 
 	for range ticker.C {
@@ -128,7 +129,7 @@ func (dash *Dashboard) cleanupStaleClients() {
 	defer dash.mtx.Unlock()
 
 	now := time.Now()
-	staleThreshold := 15 * time.Minute
+	staleThreshold := consts.StaleClientThreshold
 
 	for sessionID, client := range dash.sseClients {
 		if now.Sub(client.lastActive) > staleThreshold {

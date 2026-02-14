@@ -18,6 +18,8 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/rs/zerolog"
 
+	"github.com/almeidapaulopt/tsdproxy/internal/consts"
+
 	"github.com/almeidapaulopt/tsdproxy/internal/config"
 	"github.com/almeidapaulopt/tsdproxy/internal/model"
 	"github.com/almeidapaulopt/tsdproxy/internal/targetproviders"
@@ -310,7 +312,7 @@ func (c *Client) setDefaultBridgeAddress() {
 
 // startReconciliation periodically reconciles the containers map with actual Docker state
 func (c *Client) startReconciliation(ctx context.Context) {
-	ticker := time.NewTicker(5 * time.Minute)
+	ticker := time.NewTicker(consts.ContainerReconcileInterval)
 	defer ticker.Stop()
 
 	for {
