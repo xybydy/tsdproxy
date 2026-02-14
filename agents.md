@@ -846,8 +846,8 @@ The dashboard uses Server-Sent Events (SSE) for real-time updates:
 
 ## Resources
 
-- [Official Documentation](https://almeidapaulopt.github.io/tsdproxy/)
-- [GitHub Issues](https://github.com/almeidapaulopt/tsdproxy/issues)
+- [Official Documentation](https://xybydy.github.io/tsdproxy/)
+- [GitHub Issues](https://github.com/xybydy/tsdproxy/issues)
 - [Tailscale Documentation](https://tailscale.com/kb/)
 - [tsnet Documentation](https://pkg.go.dev/tailscale.com/tsnet)
 

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Paulo Almeida <almeidapaulopt@gmail.com>
+// SPDX-FileCopyrightText: 2025 Fatih Ka. <xybydy@gmail.com>
 // SPDX-License-Identifier: MIT
 
 package proxymanager
@@ -12,8 +12,8 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/almeidapaulopt/tsdproxy/internal/model"
-	"github.com/almeidapaulopt/tsdproxy/internal/proxyproviders"
+	"github.com/xybydy/tsdproxy/internal/model"
+	"github.com/xybydy/tsdproxy/internal/proxyproviders"
 
 	"github.com/rs/zerolog"
 )

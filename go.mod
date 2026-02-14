@@ -1,4 +1,4 @@
-module github.com/almeidapaulopt/tsdproxy
+module github.com/xybydy/tsdproxy
 
 go 1.26
 

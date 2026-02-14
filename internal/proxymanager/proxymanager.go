@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Paulo Almeida <almeidapaulopt@gmail.com>
+// SPDX-FileCopyrightText: 2025 Fatih Ka. <xybydy@gmail.com>
 // SPDX-License-Identifier: MIT
 
 package proxymanager
@@ -9,16 +9,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/almeidapaulopt/tsdproxy/internal/consts"
 	"github.com/rs/zerolog"
 
-	"github.com/almeidapaulopt/tsdproxy/internal/config"
-	"github.com/almeidapaulopt/tsdproxy/internal/model"
-	"github.com/almeidapaulopt/tsdproxy/internal/proxyproviders"
-	"github.com/almeidapaulopt/tsdproxy/internal/proxyproviders/tailscale"
-	"github.com/almeidapaulopt/tsdproxy/internal/targetproviders"
-	"github.com/almeidapaulopt/tsdproxy/internal/targetproviders/docker"
-	"github.com/almeidapaulopt/tsdproxy/internal/targetproviders/list"
+	"github.com/xybydy/tsdproxy/internal/consts"
+
+	"github.com/xybydy/tsdproxy/internal/config"
+	"github.com/xybydy/tsdproxy/internal/model"
+	"github.com/xybydy/tsdproxy/internal/proxyproviders"
+	"github.com/xybydy/tsdproxy/internal/proxyproviders/tailscale"
+	"github.com/xybydy/tsdproxy/internal/targetproviders"
+	"github.com/xybydy/tsdproxy/internal/targetproviders/docker"
+	"github.com/xybydy/tsdproxy/internal/targetproviders/list"
 )
 
 type (
@@ -66,7 +67,7 @@ func NewProxyManager(logger zerolog.Logger) *ProxyManager {
 	}
 
 	// Start cleanup routine for stale subscribers
-	//go pm.startSubscriberCleanup()
+	// go pm.startSubscriberCleanup()
 
 	return pm
 }

@@ -1,9 +1,9 @@
-// SPDX-FileCopyrightText: 2025 Paulo Almeida <almeidapaulopt@gmail.com>
+// SPDX-FileCopyrightText: 2025 Fatih Ka. <xybydy@gmail.com>
 // SPDX-License-Identifier: MIT
 
 package docker
 
-import "github.com/almeidapaulopt/tsdproxy/internal/model"
+import "github.com/xybydy/tsdproxy/internal/model"
 
 func (c *container) getLegacyPort() (model.PortConfig, error) {
 	c.log.Trace().Msg("getLegacyPort")

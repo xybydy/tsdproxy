@@ -45,7 +45,7 @@ linters:
     goheader:
       values:
         const:
-          AUTHOR: Paulo Almeida <almeidapaulopt@gmail.com>
+          AUTHOR: Fatih Ka. <xybydy@gmail.com>
       template: |-
         SPDX-FileCopyrightText: {{ YEAR }} {{ AUTHOR }}
         SPDX-License-Identifier: MIT
@@ -80,7 +80,7 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - github.com/almeidapaulopt/tsdproxy
+        - github.com/xybydy/tsdproxy
   exclusions:
     generated: lax
     paths:

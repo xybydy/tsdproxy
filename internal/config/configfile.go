@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Paulo Almeida <almeidapaulopt@gmail.com>
+// SPDX-FileCopyrightText: 2025 Fatih Ka. <xybydy@gmail.com>
 // SPDX-License-Identifier: MIT
 
 package config
@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/almeidapaulopt/tsdproxy/internal/consts"
+	"github.com/xybydy/tsdproxy/internal/consts"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/rs/zerolog"

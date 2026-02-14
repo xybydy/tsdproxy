@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Paulo Almeida <almeidapaulopt@gmail.com>
+// SPDX-FileCopyrightText: 2025 Fatih Ka. <xybydy@gmail.com>
 // SPDX-License-Identifier: MIT
 
 package main
@@ -14,12 +14,12 @@ import (
 
 	"github.com/rs/zerolog"
 
-	"github.com/almeidapaulopt/tsdproxy/internal/consts"
+	"github.com/xybydy/tsdproxy/internal/consts"
 
-	"github.com/almeidapaulopt/tsdproxy/internal/config"
-	"github.com/almeidapaulopt/tsdproxy/internal/core"
-	"github.com/almeidapaulopt/tsdproxy/internal/dashboard"
-	pm "github.com/almeidapaulopt/tsdproxy/internal/proxymanager"
+	"github.com/xybydy/tsdproxy/internal/config"
+	"github.com/xybydy/tsdproxy/internal/core"
+	"github.com/xybydy/tsdproxy/internal/dashboard"
+	pm "github.com/xybydy/tsdproxy/internal/proxymanager"
 )
 
 type WebApp struct {

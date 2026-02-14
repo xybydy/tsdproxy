@@ -8,7 +8,7 @@ assignees: ''
 ---
 
 **Before file a bug**
-verify if you case is already known in https://almeidapaulopt.github.io/tsdproxy/docs/troubleshooting/
+verify if you case is already known in https://xybydy.github.io/tsdproxy/docs/troubleshooting/
 
 **Describe the bug**
 A clear and concise description of what the bug is.

@@ -30,7 +30,7 @@ printf "Your Tailscale AuthKey" | docker secret create authkey -
 ```yaml docker-compose.yml
 services:
   tsdproxy:
-    image: almeidapaulopt/tsdproxy:latest
+    image: xybydy/tsdproxy:latest
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - datadir:/data

@@ -5,7 +5,7 @@ enableRobotsTXT: true
 enableGitInfo: true
 enableEmoji: true
 
-baseURL: https://almeidapaulopt.github.io/tsdproxy/
+baseURL: https://xybydy.github.io/tsdproxy/
 
 defaultContentLanguage: en
 languages:
@@ -47,12 +47,12 @@ menu:
         type: search
     - name: GitHub
       weight: 5
-      url: "https://github.com/almeidapaulopt/tsdproxy"
+      url: "https://github.com/xybydy/tsdproxy"
       params:
         icon: github
     - name: Twitter
       weight: 6
-      url: "https://twitter.com/almeidapaulopt"
+      url: "https://twitter.com/xybydy"
       params:
         icon: x-twitter
 
@@ -86,7 +86,7 @@ params:
 
   editURL:
     enable: true
-    base: "https://github.com/almeidapaulopt/tsdproxy/edit/main/docs/content"
+    base: "https://github.com/xybydy/tsdproxy/edit/main/docs/content"
 
   # Search
   search:

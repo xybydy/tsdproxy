@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Paulo Almeida <almeidapaulopt@gmail.com>
+// SPDX-FileCopyrightText: 2025 Fatih Ka. <xybydy@gmail.com>
 // SPDX-License-Identifier: MIT
 
 package dashboard
@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/almeidapaulopt/tsdproxy/internal/consts"
-	"github.com/almeidapaulopt/tsdproxy/internal/model"
+	"github.com/xybydy/tsdproxy/internal/consts"
+	"github.com/xybydy/tsdproxy/internal/model"
 
 	"github.com/a-h/templ"
 	datastar "github.com/starfederation/datastar/sdk/go"

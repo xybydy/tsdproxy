@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2024 Paulo Almeida <almeidapaulopt@gmail.com>
+# SPDX-FileCopyrightText: 2024 Fatih Ka. <xybydy@gmail.com>
 # SPDX-License-Identifier: MIT
 
 version: 2
@@ -6,8 +6,8 @@ version: 2
 env:
   - GO111MODULE=on
   - CGO_ENABLED=0
-  - GITHUB_ORG=almeidapaulopt
-  - DOCKER_ORG=almeidapaulopt
+  - GITHUB_ORG=xybydy
+  - DOCKER_ORG=xybydy
   - DOCKERFILE=Dockerfile.goreleaser
 
 before:
@@ -65,9 +65,9 @@ builds:
       - -tags=prod
     ldflags:
       - -s -w
-      - -X "github.com/almeidapaulopt/tsdproxy/internal/core.version={{ .Version  }}"
-      - -X "github.com/almeidapaulopt/tsdproxy/internal/core.BuildDate={{ .Date }}"
-      - -X "github.com/almeidapaulopt/tsdproxy/internal/core.GitCommit={{ .ShortCommit }}"
+      - -X "github.com/xybydy/tsdproxy/internal/core.version={{ .Version  }}"
+      - -X "github.com/xybydy/tsdproxy/internal/core.BuildDate={{ .Date }}"
+      - -X "github.com/xybydy/tsdproxy/internal/core.GitCommit={{ .ShortCommit }}"
       - -X "tailscale.com/version.Short={{ .Env.TAILSCALE_VERSION  }}"
       - -X "tailscale.com/version.Long={{ .Env.TAILSCALE_VERSION  }}-TSDProxy"
       - -X "tailscale.com/version.GitCommit={{ .ShortCommit }}"
@@ -156,7 +156,7 @@ dockers:
       - "ghcr.io/{{ .Env.GITHUB_ORG }}/{{ .ProjectName }}:{{ .Major   }}-amd64"
     build_flag_templates:
       - "--pull"
-      - '--label=io.artifacthub.package.maintainers=[{"name":"Paulo Almeida","email":"almeidapaulopt@gmail.com"}]'
+      - '--label=io.artifacthub.package.maintainers=[{"name":"Fatih Ka.","email":"xybydy@gmail.com"}]'
       - "--label=io.artifacthub.package.license=MIT"
       - "--label=org.opencontainers.image.created={{.Date}}"
       - "--label=org.opencontainers.image.name={{.ProjectName}}"
@@ -179,7 +179,7 @@ dockers:
       - "ghcr.io/{{ .Env.GITHUB_ORG }}/{{ .ProjectName }}:{{ .Major  }}-arm64v8"
     build_flag_templates:
       - "--pull"
-      - '--label=io.artifacthub.package.maintainers=[{"name":"Paulo Almeida","email":"almeidapaulopt@gmail.com"}]'
+      - '--label=io.artifacthub.package.maintainers=[{"name":"Fatih Ka.","email":"xybydy@gmail.com"}]'
       - "--label=io.artifacthub.package.license=MIT"
       - "--label=org.opencontainers.image.created={{.Date}}"
       - "--label=org.opencontainers.image.name={{.ProjectName}}"
@@ -203,7 +203,7 @@ dockers:
       - "ghcr.io/{{ .Env.GITHUB_ORG }}/{{ .ProjectName }}:{{ .Major }}-armv6"
     build_flag_templates:
       - "--pull"
-      - '--label=io.artifacthub.package.maintainers=[{"name":"Paulo Almeida","email":"almeidapaulopt@gmail.com"}]'
+      - '--label=io.artifacthub.package.maintainers=[{"name":"Fatih Ka.","email":"xybydy@gmail.com"}]'
       - "--label=io.artifacthub.package.license=MIT"
       - "--label=org.opencontainers.image.created={{.Date}}"
       - "--label=org.opencontainers.image.name={{.ProjectName}}"
@@ -227,7 +227,7 @@ dockers:
       - "ghcr.io/{{ .Env.GITHUB_ORG }}/{{ .ProjectName }}:{{ .Major }}-armv7"
     build_flag_templates:
       - "--pull"
-      - '--label=io.artifacthub.package.maintainers=[{"name":"Paulo Almeida","email":"almeidapaulopt@gmail.com"}]'
+      - '--label=io.artifacthub.package.maintainers=[{"name":"Fatih Ka.","email":"xybydy@gmail.com"}]'
       - "--label=io.artifacthub.package.license=MIT"
       - "--label=org.opencontainers.image.created={{.Date}}"
       - "--label=org.opencontainers.image.name={{.ProjectName}}"

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Paulo Almeida <almeidapaulopt@gmail.com>
+// SPDX-FileCopyrightText: 2025 Fatih Ka. <xybydy@gmail.com>
 // SPDX-License-Identifier: MIT
 
 package dashboard
@@ -7,12 +7,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/almeidapaulopt/tsdproxy/internal/consts"
-	"github.com/almeidapaulopt/tsdproxy/internal/core"
-	"github.com/almeidapaulopt/tsdproxy/internal/model"
-	"github.com/almeidapaulopt/tsdproxy/internal/proxymanager"
-	"github.com/almeidapaulopt/tsdproxy/internal/ui/pages"
-	"github.com/almeidapaulopt/tsdproxy/web"
+	"github.com/xybydy/tsdproxy/internal/consts"
+	"github.com/xybydy/tsdproxy/internal/core"
+	"github.com/xybydy/tsdproxy/internal/model"
+	"github.com/xybydy/tsdproxy/internal/proxymanager"
+	"github.com/xybydy/tsdproxy/internal/ui/pages"
+	"github.com/xybydy/tsdproxy/web"
 
 	"github.com/rs/zerolog"
 )

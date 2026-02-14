@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Paulo Almeida <almeidapaulopt@gmail.com>
+// SPDX-FileCopyrightText: 2025 Fatih Ka. <xybydy@gmail.com>
 // SPDX-License-Identifier: MIT
 
 package core
@@ -13,7 +13,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	"github.com/almeidapaulopt/tsdproxy/internal/config"
+	"github.com/xybydy/tsdproxy/internal/config"
 )
 
 var ErrHijackNotSupported = errors.New("hijack not supported")
