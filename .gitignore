@@ -54,3 +54,4 @@ web/public/icons/mdi
 # other
 tmp
 web/main.zip
+proxylist_templ.go
