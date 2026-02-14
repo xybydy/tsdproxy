@@ -111,7 +111,6 @@ dockers:
     goarch: amd64
     dockerfile: "{{ .Env.DOCKERFILE }}"
     image_templates:
-      - "{{ .Env.DOCKER_ORG }}/{{ .ProjectName }}:{{ .Env.LATEST }}-amd64"
       - "ghcr.io/{{ .Env.GITHUB_ORG }}/{{ .ProjectName }}:{{ .Env.LATEST }}-amd64"
     build_flag_templates:
       - "--pull"
@@ -132,7 +131,6 @@ dockers:
     goarch: arm64
     dockerfile: "{{ .Env.DOCKERFILE }}"
     image_templates:
-      - "{{ .Env.DOCKER_ORG }}/{{ .ProjectName }}:{{ .Env.LATEST }}-arm64v8"
       - "ghcr.io/{{ .Env.GITHUB_ORG }}/{{ .ProjectName }}:{{ .Env.LATEST }}-arm64v8"
     build_flag_templates:
       - "--pull"
@@ -154,7 +152,6 @@ dockers:
     goarm: 6
     dockerfile: "{{ .Env.DOCKERFILE }}"
     image_templates:
-      - "{{ .Env.DOCKER_ORG }}/{{ .ProjectName }}:{{ .Env.LATEST }}-armv6"
       - "ghcr.io/{{ .Env.GITHUB_ORG }}/{{ .ProjectName }}:{{ .Env.LATEST }}-armv6"
     build_flag_templates:
       - "--pull"
@@ -176,7 +173,6 @@ dockers:
     goarm: 7
     dockerfile: "{{ .Env.DOCKERFILE }}"
     image_templates:
-      - "{{ .Env.DOCKER_ORG }}/{{ .ProjectName }}:{{ .Env.LATEST }}-armv7"
       - "ghcr.io/{{ .Env.GITHUB_ORG }}/{{ .ProjectName }}:{{ .Env.LATEST }}-armv7"
     build_flag_templates:
       - "--pull"
@@ -194,12 +190,6 @@ dockers:
       - "--platform=linux/arm/v7"
 
 docker_manifests:
-  - name_template: "{{ .Env.DOCKER_ORG }}/{{ .ProjectName }}:{{ .Env.LATEST }}"
-    image_templates:
-      - "{{ .Env.DOCKER_ORG }}/{{ .ProjectName }}:{{ .Env.LATEST }}-amd64"
-      - "{{ .Env.DOCKER_ORG }}/{{ .ProjectName }}:{{ .Env.LATEST }}-arm64v8"
-      - "{{ .Env.DOCKER_ORG }}/{{ .ProjectName }}:{{ .Env.LATEST }}-armv6"
-      - "{{ .Env.DOCKER_ORG }}/{{ .ProjectName }}:{{ .Env.LATEST }}-armv7"
   - name_template: "ghcr.io/{{ .Env.GITHUB_ORG }}/{{ .ProjectName }}:{{ .Env.LATEST }}"
     image_templates:
       - ghcr.io/{{ .Env.GITHUB_ORG }}/{{ .ProjectName }}:{{ .Env.LATEST }}-amd64
