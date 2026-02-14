@@ -29,7 +29,7 @@ release:
   prerelease: true
   draft: true
   replace_existing_draft: true
-#  skip_upload: true
+  skip_upload: false
 
 builds:
   - id: server
