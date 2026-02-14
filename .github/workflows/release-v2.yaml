@@ -5,7 +5,7 @@ on:
   push:
     # run only against v2 tags
     tags:
-      - v2.*
+      - main
 
 permissions:
   contents: write
