@@ -60,3 +60,4 @@ jobs:
           DOCKER_PASSWORD: $${{ secrets.DOCKER_PASSWORD }}
           DOCKER_USERNAME: $${{ secrets.DOCKER_USERNAME }}
           TAILSCALE_VERSION: ${{ env.TAILSCALE_VERSION }}
+
