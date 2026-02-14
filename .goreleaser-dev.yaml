@@ -197,11 +197,3 @@ docker_manifests:
       - ghcr.io/{{ .Env.GITHUB_ORG }}/{{ .ProjectName }}:{{ .Env.LATEST }}-armv6
       - ghcr.io/{{ .Env.GITHUB_ORG }}/{{ .ProjectName }}:{{ .Env.LATEST }}-armv7
 
-docker_signs:
-  - cmd: cosign
-    artifacts: manifests
-    output: true
-    args:
-      - "sign"
-      - "${artifact}@${digest}"
-      - --yes
