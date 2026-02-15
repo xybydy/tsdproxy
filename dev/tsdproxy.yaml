@@ -2,7 +2,7 @@ defaultproxyprovider: default
 docker:
   local: # name of the docker provider
     host: unix:///var/run/docker.sock # host of the docker socket or daemon
-    targethostname: 172.31.0.1 # hostname or IP of docker server
+    targethostname: host.docker.internal # Use host.docker.internal for macOS, or 172.17.0.1 for Linux
     defaultproxyprovider: default # name of which proxy provider to use
 tailscale:
   providers:
