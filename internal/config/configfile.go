@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Paulo Almeida <almeidapaulopt@gmail.com>
+// SPDX-FileCopyrightText: 2026 Fatih Ka. <xybydy@gmail.com>
 // SPDX-License-Identifier: MIT
 
 package config
@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/almeidapaulopt/tsdproxy/internal/consts"
+	"github.com/xybydy/tsdproxy/internal/consts"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/rs/zerolog"
@@ -60,12 +60,12 @@ func (f *ConfigFile) Save() error {
 		}
 	}
 
-	yaml, err := yaml.Marshal(f.data)
+	data, err := yaml.Marshal(f.data)
 	if err != nil {
 		return err
 	}
 
-	err = os.WriteFile(f.filename, yaml, consts.PermAllRead+consts.PermOwnerWrite)
+	err = os.WriteFile(f.filename, data, consts.PermAllRead+consts.PermOwnerWrite)
 	if err != nil {
 		return err
 	}
@@ -119,7 +119,12 @@ func (f *ConfigFile) Watch() {
 }
 
 func (f *ConfigFile) watchEvents(watcher *fsnotify.Watcher, file string, eventsWG *sync.WaitGroup) {
-	realFile, _ := filepath.EvalSymlinks(f.filename)
+	realFile, err := filepath.EvalSymlinks(f.filename)
+	if err != nil {
+		f.log.Warn().Err(err).Msg("failed to evaluate symlinks, using raw filename")
+		realFile = f.filename
+	}
+
 	for {
 		select {
 		case event, ok := <-watcher.Events:

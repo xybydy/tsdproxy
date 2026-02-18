@@ -1,4 +1,26 @@
 services:
+  tsdproxy:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: tsdproxy
+    ports:
+      - 81:8080
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - tsdata:/data
+      - ../dev/tsdproxy-local.yaml:/config/tsdproxy.yaml:ro
+      - ../dev/KEY_FILE:/config/KEY_FILE:ro
+      - ../dev/file1.yaml:/config/file1.yaml:ro
+    environment:
+      - TSNET_FORCE_LOGIN=1
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - c2
+    restart: unless-stopped
+
   c1:
     image: nginx:latest
     ports:

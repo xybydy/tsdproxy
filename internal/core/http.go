@@ -1,10 +1,11 @@
-// SPDX-FileCopyrightText: 2025 Paulo Almeida <almeidapaulopt@gmail.com>
+// SPDX-FileCopyrightText: 2026 Fatih Ka. <xybydy@gmail.com>
 // SPDX-License-Identifier: MIT
 
 package core
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -21,6 +22,7 @@ type HTTPServer struct {
 	Log         zerolog.Logger
 	Mux         *http.ServeMux
 	middlewares []Middleware
+	Server      *http.Server
 }
 
 // NewHTTPServer creates and returns a new App with an initialized ServeMux and middleware slice.
@@ -59,15 +61,17 @@ func (a *HTTPServer) Post(pattern string, handler http.Handler) {
 
 // StartServer starts a custom http server.
 func (a *HTTPServer) StartServer(s *http.Server) error {
-	// set Logger the first middlewares
-	s.Handler = LoggerMiddleware(a.Log, a.Mux)
+	a.Server = s
 
-	if s.TLSConfig != nil {
+	// set Logger the first middlewares
+	a.Server.Handler = LoggerMiddleware(a.Log, a.Mux)
+
+	if a.Server.TLSConfig != nil {
 		// add logger middleware
-		return s.ListenAndServeTLS("", "")
+		return a.Server.ListenAndServeTLS("", "")
 	}
 
-	return s.ListenAndServe()
+	return a.Server.ListenAndServe()
 }
 
 func (a *HTTPServer) JSONResponse(w http.ResponseWriter, _ *http.Request, result interface{}) {
@@ -137,4 +141,10 @@ func (a *HTTPServer) prettyJSON(b []byte) []byte {
 		a.Log.Err(err).Msg("prettyJSON failed")
 	}
 	return out.Bytes()
+}
+
+func (a *HTTPServer) Shutdown() {
+	if err := a.Server.Shutdown(context.Background()); err != nil {
+		a.Log.Error().Err(err).Msg("Server shutdown failed")
+	}
 }

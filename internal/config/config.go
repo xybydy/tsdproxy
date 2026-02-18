@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Paulo Almeida <almeidapaulopt@gmail.com>
+// SPDX-FileCopyrightText: 2026 Fatih Ka. <xybydy@gmail.com>
 // SPDX-License-Identifier: MIT
 
 package config
@@ -6,7 +6,6 @@ package config
 import (
 	"errors"
 	"flag"
-	"fmt"
 	"io/fs"
 	"os"
 
@@ -47,7 +46,7 @@ type (
 		Host                     string `validate:"required,uri" default:"unix:///var/run/docker.sock" yaml:"host"`
 		TargetHostname           string `validate:"ip|hostname" default:"172.31.0.1" yaml:"targetHostname"`
 		DefaultProxyProvider     string `validate:"omitempty" yaml:"defaultProxyProvider,omitempty"`
-		TryDockerInternalNetwork bool   `validate:"boolean" default:"false" yaml:"tryDockerInternalNetwork"`
+		TryDockerInternalNetwork bool   `validate:"boolean" default:"true" yaml:"tryDockerInternalNetwork"`
 	}
 
 	// TailscaleProxyProviderConfig struct stores Tailscale ProxyProvider configuration
@@ -98,7 +97,7 @@ func InitializeConfig() error {
 		println("Generating default configuration to:", *file)
 
 		if err := defaults.Set(Config); err != nil {
-			fmt.Printf("Error loading defaults: %v", err)
+			log.Error().Err(err).Msg("failed to load defaults")
 		}
 
 		Config.generateDefaultProviders()
@@ -111,7 +110,7 @@ func InitializeConfig() error {
 	// Make sure to set default values after loading from file
 	// unless defaults of map type are not loaded.
 	if err := defaults.Set(Config); err != nil {
-		fmt.Printf("Error loading defaults: %v", err)
+		log.Error().Err(err).Msg("failed to load defaults")
 	}
 
 	// load auth keys from files

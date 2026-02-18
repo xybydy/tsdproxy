@@ -1,16 +1,18 @@
-// SPDX-FileCopyrightText: 2025 Paulo Almeida <almeidapaulopt@gmail.com>
+// SPDX-FileCopyrightText: 2026 Fatih Ka. <xybydy@gmail.com>
 // SPDX-License-Identifier: MIT
 
 package dashboard
 
 import (
 	"sync"
+	"time"
 
-	"github.com/almeidapaulopt/tsdproxy/internal/core"
-	"github.com/almeidapaulopt/tsdproxy/internal/model"
-	"github.com/almeidapaulopt/tsdproxy/internal/proxymanager"
-	"github.com/almeidapaulopt/tsdproxy/internal/ui/pages"
-	"github.com/almeidapaulopt/tsdproxy/web"
+	"github.com/xybydy/tsdproxy/internal/consts"
+	"github.com/xybydy/tsdproxy/internal/core"
+	"github.com/xybydy/tsdproxy/internal/model"
+	"github.com/xybydy/tsdproxy/internal/proxymanager"
+	"github.com/xybydy/tsdproxy/internal/ui/pages"
+	"github.com/xybydy/tsdproxy/web"
 
 	"github.com/rs/zerolog"
 )
@@ -25,13 +27,14 @@ type Dashboard struct {
 
 func NewDashboard(http *core.HTTPServer, log zerolog.Logger, pm *proxymanager.ProxyManager) *Dashboard {
 	dash := &Dashboard{
-		Log:        log.With().Str("module", "dashboard").Logger(),
-		HTTP:       http,
-		pm:         pm,
-		sseClients: make(map[string]*sseClient),
+		Log:  log.With().Str("module", "dashboard").Logger(),
+		HTTP: http,
+		pm:   pm,
 	}
+	dash.sseClients = make(map[string]*sseClient)
 
 	go dash.streamProxyUpdates()
+	go dash.startClientCleanup()
 
 	return dash
 }
@@ -53,8 +56,6 @@ func (dash *Dashboard) renderList(ch chan SSEMessage) {
 		Message: "#proxy-list>*",
 	}
 
-	proxies := dash.pm.GetProxies()
-	_ = proxies
 	for name, p := range dash.pm.Proxies {
 		if p.Config.Dashboard.Visible {
 			dash.renderProxy(ch, name, EventAppend)
@@ -109,5 +110,32 @@ func (dash *Dashboard) renderProxy(ch chan SSEMessage, name string, ev EventType
 	ch <- SSEMessage{
 		Type: ev,
 		Comp: pages.Proxy(a),
+	}
+}
+
+// startClientCleanup periodically removes stale SSE clients
+func (dash *Dashboard) startClientCleanup() {
+	ticker := time.NewTicker(consts.ClientCleanupInterval)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		dash.cleanupStaleClients()
+	}
+}
+
+// cleanupStaleClients removes clients that haven't been active recently
+func (dash *Dashboard) cleanupStaleClients() {
+	dash.mtx.Lock()
+	defer dash.mtx.Unlock()
+
+	now := time.Now()
+	staleThreshold := consts.StaleClientThreshold
+
+	for sessionID, client := range dash.sseClients {
+		if now.Sub(client.lastActive) > staleThreshold {
+			dash.Log.Warn().Str("sessionID", sessionID).Msg("Removing stale SSE client")
+			delete(dash.sseClients, sessionID)
+			close(client.channel)
+		}
 	}
 }

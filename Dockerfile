@@ -1,6 +1,6 @@
 
 # Usa uma imagem oficial do Go como base para a compilação
-FROM golang:1.24 AS builder
+FROM golang:1.26 AS builder
 RUN apk add --no-cache ca-certificates && update-ca-certificates 2>/dev/null || true
 
 # Define o diretório de trabalho
@@ -13,8 +13,9 @@ COPY . .
 RUN go mod tidy && CGO_ENABLED=0 GOOS=linux go build -o /tsdproxyd ./cmd/server/main.go
 RUN CGO_ENABLED=0 GOOS=linux go build -o /healthcheck ./cmd/healthcheck/main.go
 
-
+#test
 FROM scratch
+
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 

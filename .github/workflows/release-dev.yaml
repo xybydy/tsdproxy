@@ -34,19 +34,18 @@ jobs:
         with:
           bun-version: latest
 
-      - uses: sigstore/cosign-installer@v3.7.0
-
-      - name: dockerhub-login
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+      # - uses: sigstore/cosign-installer@v3.7.0
+      # - name: dockerhub-login
+      #   uses: docker/login-action@v3
+      #   with:
+      #     username: ${{ secrets.DOCKER_USERNAME }}
+      #     password: ${{ secrets.DOCKER_PASSWORD }}
       - name: ghcr-login
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.TOKEN }}
 
       - name: Get Tailscale version
         run: echo "TAILSCALE_VERSION=$(go list -m tailscale.com | awk '{print $2}')" >> $GITHUB_ENV
@@ -58,7 +57,7 @@ jobs:
           version: "~> v2"
           args: release -f .goreleaser-dev.yaml --skip validate --clean
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
           DOCKER_PASSWORD: $${{ secrets.DOCKER_PASSWORD }}
           DOCKER_USERNAME: $${{ secrets.DOCKER_USERNAME }}
           TAILSCALE_VERSION: ${{ env.TAILSCALE_VERSION }}

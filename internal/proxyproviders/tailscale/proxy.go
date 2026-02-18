@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Paulo Almeida <almeidapaulopt@gmail.com>
+// SPDX-FileCopyrightText: 2026 Fatih Ka. <xybydy@gmail.com>
 // SPDX-License-Identifier: MIT
 
 package tailscale
@@ -12,8 +12,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/almeidapaulopt/tsdproxy/internal/model"
-	"github.com/almeidapaulopt/tsdproxy/internal/proxyproviders"
+	"github.com/xybydy/tsdproxy/internal/model"
+	"github.com/xybydy/tsdproxy/internal/proxyproviders"
 
 	"github.com/rs/zerolog"
 	"tailscale.com/client/local"
@@ -76,6 +76,13 @@ func (p *Proxy) GetURL() string {
 
 // Close method implements proxyconfig.Proxy Close method.
 func (p *Proxy) Close() error {
+	p.mtx.Lock()
+	if p.events != nil {
+		close(p.events)
+		p.events = nil
+	}
+	p.mtx.Unlock()
+
 	if p.tsServer != nil {
 		return p.tsServer.Close()
 	}

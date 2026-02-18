@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Paulo Almeida <almeidapaulopt@gmail.com>
+// SPDX-FileCopyrightText: 2026 Fatih Ka. <xybydy@gmail.com>
 // SPDX-License-Identifier: MIT
 
 package docker
@@ -43,7 +43,7 @@ const (
 
 	// auto detect
 	dialTimeout     = 2 * time.Second
-	autoDetectTries = 5
+	autoDetectTries = 10
 	autoDetectSleep = 5 * time.Second
 
 	// Port options

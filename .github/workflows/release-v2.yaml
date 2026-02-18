@@ -5,7 +5,7 @@ on:
   push:
     # run only against v2 tags
     tags:
-      - v2.*
+      - main
 
 permissions:
   contents: write
@@ -31,20 +31,20 @@ jobs:
       - uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
-      - uses: sigstore/cosign-installer@v3.7.0
-      - name: dockerhub-login
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: ghcr-login
-        if: startsWith(github.ref, 'refs/tags/v')
+      # - uses: sigstore/cosign-installer@v3.7.0
+      # - name: dockerhub-login
+      #   if: startsWith(github.ref, 'refs/tags/v')
+      #   uses: docker/login-action@v3
+      #   with:
+      #     username: ${{ secrets.DOCKER_USERNAME }}
+      #     password: ${{ secrets.DOCKER_PASSWORD }}
+      # - name: ghcr-login
+        # if: startsWith(github.ref, 'refs/tags/v')
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.TOKEN }}
 
       - name: Get Tailscale version
         run: echo "TAILSCALE_VERSION=$(go list -m tailscale.com | awk '{print $2}')" >> $GITHUB_ENV
@@ -60,3 +60,4 @@ jobs:
           DOCKER_PASSWORD: $${{ secrets.DOCKER_PASSWORD }}
           DOCKER_USERNAME: $${{ secrets.DOCKER_USERNAME }}
           TAILSCALE_VERSION: ${{ env.TAILSCALE_VERSION }}
+

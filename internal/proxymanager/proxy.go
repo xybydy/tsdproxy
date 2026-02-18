@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Paulo Almeida <almeidapaulopt@gmail.com>
+// SPDX-FileCopyrightText: 2026 Fatih Ka. <xybydy@gmail.com>
 // SPDX-License-Identifier: MIT
 
 package proxymanager
@@ -12,8 +12,8 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/almeidapaulopt/tsdproxy/internal/model"
-	"github.com/almeidapaulopt/tsdproxy/internal/proxyproviders"
+	"github.com/xybydy/tsdproxy/internal/model"
+	"github.com/xybydy/tsdproxy/internal/proxyproviders"
 
 	"github.com/rs/zerolog"
 )
@@ -79,8 +79,18 @@ func NewProxy(log zerolog.Logger,
 func (proxy *Proxy) Start() {
 	go func() {
 		go proxy.start()
-		for event := range proxy.providerProxy.WatchEvents() {
-			proxy.setStatus(event.Status)
+		for {
+			select {
+			case event, ok := <-proxy.providerProxy.WatchEvents():
+				if !ok {
+					// Channel closed, exit goroutine
+					return
+				}
+				proxy.setStatus(event.Status)
+			case <-proxy.ctx.Done():
+				// Context canceled, exit goroutine
+				return
+			}
 		}
 	}()
 }

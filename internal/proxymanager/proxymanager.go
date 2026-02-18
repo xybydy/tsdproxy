@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Paulo Almeida <almeidapaulopt@gmail.com>
+// SPDX-FileCopyrightText: 2026 Fatih Ka. <xybydy@gmail.com>
 // SPDX-License-Identifier: MIT
 
 package proxymanager
@@ -7,16 +7,19 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"time"
 
 	"github.com/rs/zerolog"
 
-	"github.com/almeidapaulopt/tsdproxy/internal/config"
-	"github.com/almeidapaulopt/tsdproxy/internal/model"
-	"github.com/almeidapaulopt/tsdproxy/internal/proxyproviders"
-	"github.com/almeidapaulopt/tsdproxy/internal/proxyproviders/tailscale"
-	"github.com/almeidapaulopt/tsdproxy/internal/targetproviders"
-	"github.com/almeidapaulopt/tsdproxy/internal/targetproviders/docker"
-	"github.com/almeidapaulopt/tsdproxy/internal/targetproviders/list"
+	"github.com/xybydy/tsdproxy/internal/consts"
+
+	"github.com/xybydy/tsdproxy/internal/config"
+	"github.com/xybydy/tsdproxy/internal/model"
+	"github.com/xybydy/tsdproxy/internal/proxyproviders"
+	"github.com/xybydy/tsdproxy/internal/proxyproviders/tailscale"
+	"github.com/xybydy/tsdproxy/internal/targetproviders"
+	"github.com/xybydy/tsdproxy/internal/targetproviders/docker"
+	"github.com/xybydy/tsdproxy/internal/targetproviders/list"
 )
 
 type (
@@ -33,9 +36,17 @@ type (
 		TargetProviders TargetProviderList
 		ProxyProviders  ProxyProviderList
 
-		statusSubscribers map[chan model.ProxyEvent]struct{}
+		statusSubscribers map[chan model.ProxyEvent]*subscriber
+
+		// eventWorkerPool limits concurrent event handler goroutines
+		eventWorkerPool chan struct{}
 
 		mtx sync.RWMutex
+	}
+
+	subscriber struct {
+		ch       chan model.ProxyEvent
+		lastSeen time.Time
 	}
 )
 
@@ -50,9 +61,13 @@ func NewProxyManager(logger zerolog.Logger) *ProxyManager {
 		Proxies:           make(ProxyList),
 		TargetProviders:   make(TargetProviderList),
 		ProxyProviders:    make(ProxyProviderList),
-		statusSubscribers: make(map[chan model.ProxyEvent]struct{}),
+		statusSubscribers: make(map[chan model.ProxyEvent]*subscriber),
+		eventWorkerPool:   make(chan struct{}, consts.MaxConcurrentEventHandlers),
 		log:               logger.With().Str("module", "proxymanager").Logger(),
 	}
+
+	// Start cleanup routine for stale subscribers
+	// go pm.startSubscriberCleanup()
 
 	return pm
 }
@@ -78,44 +93,84 @@ func (pm *ProxyManager) Start() {
 // StopAllProxies method shuts down all proxies.
 func (pm *ProxyManager) StopAllProxies() {
 	pm.log.Info().Msg("Shutdown all proxies")
-	wg := sync.WaitGroup{}
 
 	pm.mtx.RLock()
+	proxyIDs := make([]string, 0, len(pm.Proxies))
 	for id := range pm.Proxies {
-		wg.Add(1)
-		go func() {
-			pm.removeProxy(id)
-			wg.Done()
-		}()
+		proxyIDs = append(proxyIDs, id)
 	}
 	pm.mtx.RUnlock()
+
+	wg := sync.WaitGroup{}
+	wg.Add(len(proxyIDs))
+
+	for _, id := range proxyIDs {
+		go func(proxyID string) {
+			defer wg.Done()
+			pm.removeProxy(proxyID)
+		}(id)
+	}
 
 	wg.Wait()
 }
 
 // WatchEvents method watches for events from all target providers.
-func (pm *ProxyManager) WatchEvents() {
+func (pm *ProxyManager) WatchEvents(ctx context.Context) {
+	var wg sync.WaitGroup
+
 	for _, provider := range pm.TargetProviders {
+		wg.Add(1)
 		go func(provider targetproviders.TargetProvider) {
-			ctx := context.Background()
+			defer wg.Done()
+			defer func() {
+				if r := recover(); r != nil {
+					pm.log.Error().Interface("panic", r).Msg("event watcher panicked")
+				}
+			}()
 
-			eventsChan := make(chan targetproviders.TargetEvent)
-			errChan := make(chan error)
-			defer close(errChan)
-			defer close(eventsChan)
+			eventsChan := make(chan targetproviders.TargetEvent, consts.EventChannelBufferSize)
+			errChan := make(chan error, consts.ErrorChannelBufferSize)
 
-			provider.WatchEvents(ctx, eventsChan, errChan)
+			// Start provider's event watcher
+			go provider.WatchEvents(ctx, eventsChan, errChan)
+
 			for {
 				select {
-				case event := <-eventsChan:
-					go pm.HandleProxyEvent(event)
-				case err := <-errChan:
-					pm.log.Err(err).Msg("Error watching events")
+				case <-ctx.Done():
 					return
+				case event, ok := <-eventsChan:
+					if !ok {
+						pm.log.Debug().Msg("events channel closed, stopping watcher")
+						return
+					}
+					// Use worker pool to limit concurrent event handlers
+					select {
+					case pm.eventWorkerPool <- struct{}{}: // Acquire semaphore
+						go func(e targetproviders.TargetEvent) {
+							defer func() { <-pm.eventWorkerPool }() // Release semaphore
+							pm.HandleProxyEvent(e)
+						}(event)
+					case <-ctx.Done():
+						return
+					}
+				case err, ok := <-errChan:
+					if !ok {
+						pm.log.Debug().Msg("error channel closed, stopping watcher")
+						return
+					}
+					pm.log.Err(err).Msg("Error watching events")
 				}
 			}
 		}(provider)
 	}
+
+	// Wait for all watchers to finish when context is canceled
+	go func() {
+		<-ctx.Done()
+		pm.log.Debug().Msg("Context canceled, waiting for watchers to finish")
+		wg.Wait()
+		pm.log.Debug().Msg("All watchers finished")
+	}()
 }
 
 // HandleProxyEvent method handles events from a targetprovider
@@ -134,10 +189,13 @@ func (pm *ProxyManager) HandleProxyEvent(event targetproviders.TargetEvent) {
 // SubscribeStatusEvents return a channel of proxy events.
 // This events are sent by Proxies and Ports.
 func (pm *ProxyManager) SubscribeStatusEvents() <-chan model.ProxyEvent {
-	ch := make(chan model.ProxyEvent)
+	ch := make(chan model.ProxyEvent, consts.StatusEventChannelBufferSize) // Buffered channel to prevent blocking
 
 	pm.mtx.Lock()
-	pm.statusSubscribers[ch] = struct{}{}
+	pm.statusSubscribers[ch] = &subscriber{
+		ch:       ch,
+		lastSeen: time.Now(),
+	}
 	pm.mtx.Unlock()
 
 	return ch
@@ -170,13 +228,27 @@ func (pm *ProxyManager) GetProxy(name string) (*Proxy, bool) {
 // broadcastStatusEvents broadcasts proxy status event to all SubscribeStatusEvents
 func (pm *ProxyManager) broadcastStatusEvents(event model.ProxyEvent) {
 	pm.mtx.RLock()
+	subscribers := make([]chan model.ProxyEvent, 0, len(pm.statusSubscribers))
 	for ch := range pm.statusSubscribers {
-		select {
-		case ch <- event:
-		default:
-		}
+		subscribers = append(subscribers, ch)
 	}
 	pm.mtx.RUnlock()
+
+	// Send without holding lock to prevent deadlock
+	for _, ch := range subscribers {
+		select {
+		case ch <- event:
+			// Update lastSeen timestamp for active subscriber
+			pm.mtx.Lock()
+			if sub, ok := pm.statusSubscribers[ch]; ok {
+				sub.lastSeen = time.Now()
+			}
+			pm.mtx.Unlock()
+		default:
+			// Channel full, skip this subscriber to prevent blocking
+			pm.log.Warn().Msg("Subscriber channel full, skipping event broadcast")
+		}
+	}
 }
 
 // addTargetProviders method adds TargetProviders from configuration file.
@@ -241,7 +313,10 @@ func (pm *ProxyManager) addProxy(proxy *Proxy) {
 
 // removeProxy method removes a Proxy from the ProxyManager.
 func (pm *ProxyManager) removeProxy(hostname string) {
+	pm.mtx.RLock()
 	proxy, exists := pm.Proxies[hostname]
+	pm.mtx.RUnlock()
+
 	if !exists {
 		return
 	}

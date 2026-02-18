@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Paulo Almeida <almeidapaulopt@gmail.com>
+// SPDX-FileCopyrightText: 2026 Fatih Ka. <xybydy@gmail.com>
 // SPDX-License-Identifier: MIT
 
 package core
@@ -35,7 +35,7 @@ func NewHealthHandler(http *HTTPServer, log zerolog.Logger) *Health {
 }
 
 func (h *Health) AddRoutes() {
-	h.HTTP.Handle("GET /health/ready/", h.Ready())
+	h.HTTP.Get("/health/ready/", h.Ready())
 }
 
 func (h *Health) Ready() http.HandlerFunc {

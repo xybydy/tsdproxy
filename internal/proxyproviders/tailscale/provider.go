@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Paulo Almeida <almeidapaulopt@gmail.com>
+// SPDX-FileCopyrightText: 2026 Fatih Ka. <xybydy@gmail.com>
 // SPDX-License-Identifier: MIT
 
 package tailscale
@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/almeidapaulopt/tsdproxy/internal/config"
-	"github.com/almeidapaulopt/tsdproxy/internal/model"
-	"github.com/almeidapaulopt/tsdproxy/internal/proxyproviders"
+	"github.com/xybydy/tsdproxy/internal/config"
+	"github.com/xybydy/tsdproxy/internal/model"
+	"github.com/xybydy/tsdproxy/internal/proxyproviders"
 
 	"github.com/rs/zerolog"
 	"tailscale.com/client/tailscale/v2"
@@ -142,6 +142,12 @@ func (c *Client) getOAuth(cfg *model.Config, dir string) string {
 	temptags := strings.Trim(strings.TrimSpace(cfg.Tailscale.Tags), "\"")
 	if temptags == "" {
 		temptags = strings.Trim(strings.TrimSpace(c.tags), "\"")
+	}
+
+	// If using OAuth, we must use only the per-proxy tags, not the provider-level tags
+	// This ensures each proxy gets only its configured tags, not all tags from the OAuth client
+	if cfg.Tailscale.Tags != "" {
+		temptags = strings.Trim(strings.TrimSpace(cfg.Tailscale.Tags), "\"")
 	}
 
 	if temptags == "" {

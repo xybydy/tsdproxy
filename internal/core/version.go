@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Paulo Almeida <almeidapaulopt@gmail.com>
+// SPDX-FileCopyrightText: 2026 Fatih Ka. <xybydy@gmail.com>
 // SPDX-License-Identifier: MIT
 
 package core
@@ -17,7 +17,7 @@ var (
 
 const (
 	AppName   = "TSDProxy"
-	AppAuthor = "Paulo Almeida <almeidapaulopt@gmail.com>"
+	AppAuthor = "Fatih Ka. <xybydy@gmail.com>"
 )
 
 func GetVersion() string {

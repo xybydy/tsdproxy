@@ -9,7 +9,7 @@ without the need for complex configurations or additional Tailscale containers.
 
 Version 2 is already in beta. Please try and open issues if bugs detected.
 Some configurations of Version 1.x are deprecated or changed please verify it in
- [Documentation changelog](https://almeidapaulopt.github.io/tsdproxy/docs/changelog/).
+ [Documentation changelog](https://xybydy.github.io/tsdproxy/docs/changelog/).
 
 Because of some breaking changes, final version 2 arrive will not set as latest
 Docker image. We will wait some weeks to give you time to update.
@@ -18,26 +18,26 @@ Version 1 will not get new features.
 
 ## Full Documentation
 
-- [Official Documentation](https://almeidapaulopt.github.io/tsdproxy/)
+- [Official Documentation](https://xybydy.github.io/tsdproxy/)
 
 ## Breaking Changes
 
-Please read the [Documentation changelog](https://almeidapaulopt.github.io/tsdproxy/docs/changelog/)
+Please read the [Documentation changelog](https://xybydy.github.io/tsdproxy/docs/changelog/)
 for details.
 
 ## Help needed
 
 Please help with documentation, tests development, new features, bug fixes.
-If you don't feel comfortable to this kind of tasks, [sponsor](https://github.com/sponsors/almeidapaulopt)
+If you don't feel comfortable to this kind of tasks, [sponsor](https://github.com/sponsors/xybydy)
 the project.
 
 ## Docker Images
 
-1. almeidapaulopt/tsdproxy:vx.x.x  - Version x.x.x
-2. almeidapaulopt/tsdproxy:1       - Latest release of version 1.x.x
-3. almeidapaulopt/tsdproxy:2       - Latest release of version 2.x.x (beta)
-4. almeidapaulopt/tsdproxy:latest  - Latest stable
-5. almeidapaulopt/tsdproxy:dev     - Latest Development Build
+1. xybydy/tsdproxy:vx.x.x  - Version x.x.x
+2. xybydy/tsdproxy:1       - Latest release of version 1.x.x
+3. xybydy/tsdproxy:2       - Latest release of version 2.x.x (beta)
+4. xybydy/tsdproxy:latest  - Latest stable
+5. xybydy/tsdproxy:dev     - Latest Development Build
 
 ## Core Functionality
 

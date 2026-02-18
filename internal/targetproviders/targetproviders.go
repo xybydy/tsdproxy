@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Paulo Almeida <almeidapaulopt@gmail.com>
+// SPDX-FileCopyrightText: 2026 Fatih Ka. <xybydy@gmail.com>
 // SPDX-License-Identifier: MIT
 
 package targetproviders
@@ -6,7 +6,7 @@ package targetproviders
 import (
 	"context"
 
-	"github.com/almeidapaulopt/tsdproxy/internal/model"
+	"github.com/xybydy/tsdproxy/internal/model"
 )
 
 type (
@@ -16,6 +16,7 @@ type (
 		GetDefaultProxyProviderName() string
 		Close()
 		AddTarget(id string) (*model.Config, error)
+		RemoveTarget(id string)
 		DeleteProxy(id string) error
 	}
 )
@@ -24,8 +25,8 @@ const (
 	ActionStartProxy ActionType = iota + 1
 	ActionStopProxy
 	ActionRestartProxy
-	ActionStartProt
-	ActionStopPrort
+	ActionStartPort
+	ActionStopPort
 	ActionRestartPort
 )
 

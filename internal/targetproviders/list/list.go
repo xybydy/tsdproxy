@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2025 Paulo Almeida <almeidapaulopt@gmail.com>
+// SPDX-FileCopyrightText: 2026 Fatih Ka. <xybydy@gmail.com>
 // SPDX-License-Identifier: MIT
 
 package list
@@ -11,9 +11,9 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/almeidapaulopt/tsdproxy/internal/config"
-	"github.com/almeidapaulopt/tsdproxy/internal/model"
-	"github.com/almeidapaulopt/tsdproxy/internal/targetproviders"
+	"github.com/xybydy/tsdproxy/internal/config"
+	"github.com/xybydy/tsdproxy/internal/model"
+	"github.com/xybydy/tsdproxy/internal/targetproviders"
 
 	"github.com/creasty/defaults"
 	"github.com/fsnotify/fsnotify"
@@ -155,6 +155,14 @@ func (c *Client) DeleteProxy(id string) error {
 	delete(c.proxies, id)
 
 	return nil
+}
+
+// RemoveTarget method implements TargetProvider RemoveTarget method
+func (c *Client) RemoveTarget(id string) {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+
+	delete(c.proxies, id)
 }
 
 // newProxyConfig method returns a new proxyconfig.Config
